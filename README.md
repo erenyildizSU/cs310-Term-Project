@@ -1,4 +1,4 @@
-# cs310-Term-Project
+# CampusVibe
 
 Group Members: 
 
