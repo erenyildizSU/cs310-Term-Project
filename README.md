@@ -1,9 +1,8 @@
 # cs310-Term-Project
-Leader : EREN YILDIZ
 
 Group Members: 
 
-- HÜSEYİN EREN YILDIZ 
+- Hüseyin Eren Yıldız
 - Liza Berfin İnce
 - Petek Metin
 - Ahmet Ekrem Rüzgar
