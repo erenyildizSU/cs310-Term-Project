@@ -36,7 +36,7 @@ CampusVibe aims to enhance university life by combining event management, club a
 - **Save Events** – Users can favorite events to track updates.
 
 ## Platform
-The application will be developed using **Flutter** for mobile (Android & iOS).
+The application will be developed using **Flutter** for mobile.
 
 ## Data Storage
 The app will store:
