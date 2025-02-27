@@ -1,2 +1,4 @@
 # cs310-Term-Project
-SUBJECT:  
+Leader : EREN YILDIZ
+
+SUBJECT:  THIS TICKET / CampusVibe 
