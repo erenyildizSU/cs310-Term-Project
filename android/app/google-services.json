@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "569534147550",
+    "project_id": "campusvibe-e5216",
+    "storage_bucket": "campusvibe-e5216.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:569534147550:android:878acafe1598375e0f8b4f",
+        "android_client_info": {
+          "package_name": "com.cs310.campusvibe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAberdZWSF9e8Wgu1oNB5fLWvrBETHHEbQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
