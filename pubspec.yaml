@@ -141,3 +141,11 @@ flutter:
           weight: 700
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+
+  dependencies:
+    flutter:
+      sdk: flutter
+    firebase_core: ^2.13.0
+    cloud_firestore: ^4.15.1
+    firebase_auth: ^4.8.1
