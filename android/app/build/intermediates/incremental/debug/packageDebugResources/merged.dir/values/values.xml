@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gcm_defaultSenderId" translatable="false">679131420046</string>
+    <string name="google_api_key" translatable="false">AIzaSyDVEKrRYhjvOcysKKcLghudcCbmQvSEerc</string>
+    <string name="google_app_id" translatable="false">1:679131420046:android:5816b815b4b1baf52e40df</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyDVEKrRYhjvOcysKKcLghudcCbmQvSEerc</string>
+    <string name="google_storage_bucket" translatable="false">campusvibe-4407f.firebasestorage.app</string>
+    <string name="project_id" translatable="false">campusvibe-4407f</string>
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        
+        <item name="android:windowBackground">@drawable/launch_background</item>
+    </style>
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
+</resources>

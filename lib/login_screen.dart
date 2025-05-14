@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
 import '../utils/app_paddings.dart';
@@ -13,19 +14,86 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _isLoading = false;
 
-  void _validateAndLogin() {
-    if (_formKey.currentState!.validate()) {
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loginUser() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      // Kullanıcının e-posta doğrulaması yapılmış mı kontrol et
+      if (!userCredential.user!.emailVerified) {
+        await userCredential.user!.sendEmailVerification();
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Email Not Verified'),
+            content: const Text(
+              'Your email is not verified. We have sent a verification link to your email. Please verify your email to log in.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      // Giriş başarılı olduğunda anasayfaya yönlendirme
       Navigator.pushReplacementNamed(context, '/');
-    } else {
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
+
+      switch (e.code) {
+        case 'user-not-found':
+          errorMessage = 'User not found. Please register first.';
+          break;
+        case 'wrong-password':
+          errorMessage = 'Incorrect password. Please try again.';
+          break;
+        case 'invalid-email':
+          errorMessage = 'Invalid email format.';
+          break;
+        case 'user-disabled':
+          errorMessage = 'User account has been disabled.';
+          break;
+        case 'network-request-failed':
+          errorMessage = 'Network error. Please check your internet connection.';
+          break;
+        case 'too-many-requests':
+          errorMessage = 'Too many login attempts. Please try again later.';
+          break;
+        case 'operation-not-allowed':
+          errorMessage = 'Email/Password sign-in is not enabled.';
+          break;
+        default:
+          errorMessage = 'Login failed: ${e.message}';
+      }
+
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Invalid Form'),
-          content: const Text('Please fill all fields correctly.'),
+          title: const Text('Login Failed'),
+          content: Text(errorMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -34,6 +102,24 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
         ),
       );
+    } catch (e) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: Text('An unexpected error occurred: ${e.toString()}'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -104,29 +190,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 16),
                             TextFormField(
-                              controller: _nameController,
-                              decoration: InputDecoration(
-                                labelText: 'NAME',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              validator: (value) {
-                                final email = _emailController.text.trim();
-                                final emailNamePart = email.contains('@')
-                                    ? email.split('@')[0].replaceAll('.', '').toLowerCase()
-                                    : '';
-                                final normalizedInput = value?.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '') ?? '';
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your name';
-                                } else if (emailNamePart.isNotEmpty && !normalizedInput.contains(emailNamePart)) {
-                                  return 'Name must include the email prefix';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
                               controller: _passwordController,
                               obscureText: true,
                               decoration: InputDecoration(
@@ -143,18 +206,23 @@ class _LoginScreenState extends State<LoginScreen> {
                               },
                             ),
                             const SizedBox(height: 24),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 48,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
+                            _isLoading
+                                ? const CircularProgressIndicator()
+                                : ElevatedButton(
+                              onPressed: () {
+                                if (_formKey.currentState!.validate()) {
+                                  _loginUser();
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                onPressed: _validateAndLogin,
-                                child: const Text('LOGIN', style: AppTextStyles.loginButtonText),
+                              ),
+                              child: const Text(
+                                'LOGIN',
+                                style: AppTextStyles.loginButtonText,
                               ),
                             ),
                             const SizedBox(height: 16),
