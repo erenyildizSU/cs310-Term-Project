@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_paddings.dart';
 import 'login_screen.dart';
@@ -15,34 +17,114 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-  DateTime? selectedDate;
+  bool _isLoading = false;
 
-  void _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate ?? DateTime(2000),
-      firstDate: DateTime(1950),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null && picked != selectedDate) {
-      setState(() => selectedDate = picked);
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  // Kullanıcı verilerini Firestore'a kaydetme
+  Future<void> saveUserToDatabase(String uid, String name, String email) async {
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'role': "",
+        'name': name,
+        'email': email,
+        'createdAt': DateTime.now().toString(),
+      });
+      print('User data saved successfully');
+    } catch (e) {
+      print('Error saving user data: $e');
     }
   }
 
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Form is valid. Registering user...')),
+  // Firebase ile kullanıcı kaydı işlemi
+  Future<void> _registerUser() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
       );
-    } else {
+
+      User? user = userCredential.user;
+      if (user != null) {
+        // Kullanıcı bilgilerini Firestore'a kaydetme
+        await saveUserToDatabase(user.uid, nameController.text.trim(), emailController.text.trim());
+
+        // E-posta doğrulama gönderme
+        await user.sendEmailVerification();
+
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Registration Successful'),
+            content: const Text(
+              'Please verify your email. A verification link has been sent.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  );
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
+
+      switch (e.code) {
+        case 'email-already-in-use':
+          errorMessage = 'This email is already registered.';
+          break;
+        case 'invalid-email':
+          errorMessage = 'Invalid email format.';
+          break;
+        case 'weak-password':
+          errorMessage = 'Password should be at least 6 characters.';
+          break;
+        case 'operation-not-allowed':
+          errorMessage = 'Email/Password sign-up is not enabled.';
+          break;
+        case 'network-request-failed':
+          errorMessage = 'Network error. Please check your connection.';
+          break;
+        default:
+          errorMessage = 'Registration failed: ${e.message}';
+      }
+
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Invalid Form'),
-          content: const Text('Please fill in all required fields correctly.'),
-          actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+          title: const Text('Registration Failed'),
+          content: Text(errorMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
         ),
       );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -65,25 +147,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const SizedBox(height: 20),
                   const Text(
-                    'Create new\nAccount',
+                    'Create New\nAccount',
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue),
-                  ),
-                  const SizedBox(height: 2),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const LoginScreen()),
-                        );
-                      },
-                      child: const Text(
-                        "Already Registered? Login Here!",
-                        style: TextStyle(color: AppColors.primary),
-                      ),
-                    ),
                   ),
                   const SizedBox(height: 30),
 
@@ -93,7 +158,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
                       labelText: 'EMAIL',
-                      hintText: 'elif.koc@sabanciuniv.edu',
+                      hintText: 'example@sabanciuniv.edu',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     validator: (value) {
@@ -112,26 +177,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     controller: nameController,
                     decoration: InputDecoration(
                       labelText: 'NAME',
-                      hintText: 'Elif Koc',
+                      hintText: 'John Doe',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     validator: (value) {
-                      final email = emailController.text.trim();
-                      final emailNamePart = email.contains('@')
-                          ? email.split('@')[0].replaceAll('.', '').toLowerCase()
-                          : '';
-                      final normalizedInput = value?.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '') ?? '';
                       if (value == null || value.isEmpty) {
                         return 'Please enter your name';
-                      } else if (emailNamePart.isNotEmpty && !normalizedInput.contains(emailNamePart)) {
-                        return 'Name must include the email prefix';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
-
-
 
                   // Password
                   TextFormField(
@@ -154,12 +210,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   SizedBox(
                     width: double.infinity,
                     height: 50,
-                    child: ElevatedButton(
+                    child: _isLoading
+                        ? const CircularProgressIndicator()
+                        : ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      onPressed: _submitForm,
+                      onPressed: _registerUser,
                       child: const Text('SIGN UP', style: TextStyle(fontSize: 16, color: Colors.white)),
                     ),
                   )
