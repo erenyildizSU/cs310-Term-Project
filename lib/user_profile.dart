@@ -1,10 +1,71 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
 import '../utils/app_paddings.dart';
 
-class UserProfileScreen extends StatelessWidget {
+class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
+
+  @override
+  State<UserProfileScreen> createState() => _UserProfileScreenState();
+}
+
+class _UserProfileScreenState extends State<UserProfileScreen> {
+  String name = "Loading...";
+  String email = "Loading...";
+  String phone = "Loading...";
+  String role = "Loading...";
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  // Kullanıcı verilerini Firestore'dan alma
+  Future<void> _fetchUserData() async {
+    try {
+      User? currentUser = FirebaseAuth.instance.currentUser;
+
+      if (currentUser != null) {
+        // Firestore'dan kullanıcı verilerini al
+        DocumentSnapshot doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .get();
+
+        if (doc.exists) {
+          setState(() {
+            name = doc['name'] ?? 'No Name';
+            email = doc['email'] ?? 'No Email';
+            phone = doc['phone'] ?? 'No Phone';
+            role = doc['role'] ?? 'No Role';
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            name = 'User Not Found';
+            email = 'N/A';
+            phone = 'N/A';
+            role = 'N/A';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print("Error fetching user data: $e");
+      setState(() {
+        name = 'Error';
+        email = 'Error';
+        phone = 'Error';
+        role = 'Error';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +79,6 @@ class UserProfileScreen extends StatelessWidget {
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -38,40 +98,47 @@ class UserProfileScreen extends StatelessWidget {
               onTap: () => Navigator.pushReplacementNamed(context, '/clubEdit'),
             ),
             ListTile(
-                leading: const Icon(Icons.exit_to_app_outlined),
-                title: const Text('Log Out'),
-                onTap: () => Navigator.pushReplacementNamed(context, '/login'),
+              leading: const Icon(Icons.exit_to_app_outlined),
+              title: const Text('Log Out'),
+              onTap: () => Navigator.pushReplacementNamed(context, '/login'),
             ),
           ],
         ),
       ),
-
-
       body: Padding(
         padding: AppPaddings.all16,
         child: Column(
           children: [
             const CircleAvatar(
               radius: 75,
-              backgroundImage: NetworkImage('https://image.hurimg.com/i/hurriyet/75/770x0/5943dd040f25442444482768.jpg'),
+              backgroundColor: AppColors.primary,
+              child: Icon(
+                Icons.person,
+                size: 75,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Elif Durdane Koc',
+            _isLoading
+                ? const CircularProgressIndicator()
+                : Text(
+              name,
               style: AppTextStyles.profileName,
             ),
             const SizedBox(height: 16),
-            const ListTile(
-              leading: Icon(Icons.email),
-              title: Text('elif.koc@sabanciuniv.edu'),
+
+            // Kullanıcı Bilgileri
+            ListTile(
+              leading: const Icon(Icons.email),
+              title: Text(email),
             ),
-            const ListTile(
-              leading: Icon(Icons.phone),
-              title: Text('0 (532) 123 4567'),
+            ListTile(
+              leading: const Icon(Icons.phone),
+              title: Text(phone),
             ),
-            const ListTile(
-              leading: Icon(Icons.person),
-              title: Text('Instructor'),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: Text(role),
             ),
             const SizedBox(height: 40),
 
@@ -81,7 +148,6 @@ class UserProfileScreen extends StatelessWidget {
               },
               child: const Text('Log out'),
             ),
-
             ElevatedButton(
               onPressed: () {
                 Navigator.pushNamed(context, '/aboutUs');
@@ -91,7 +157,6 @@ class UserProfileScreen extends StatelessWidget {
           ],
         ),
       ),
-
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: AppColors.primary,
         selectedItemColor: Colors.white,

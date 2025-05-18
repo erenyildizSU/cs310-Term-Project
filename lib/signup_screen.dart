@@ -17,6 +17,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final phoneController = TextEditingController();
   bool _isLoading = false;
 
   @override
@@ -24,16 +25,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
     nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
+    phoneController.dispose();
     super.dispose();
   }
 
   // Kullanıcı verilerini Firestore'a kaydetme
-  Future<void> saveUserToDatabase(String uid, String name, String email) async {
+  Future<void> saveUserToDatabase(String uid, String name, String email, String phone) async {
     try {
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'role': "",
         'name': name,
         'email': email,
+        'phone': phone,
         'createdAt': DateTime.now().toString(),
       });
       print('User data saved successfully');
@@ -58,7 +61,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
       User? user = userCredential.user;
       if (user != null) {
         // Kullanıcı bilgilerini Firestore'a kaydetme
-        await saveUserToDatabase(user.uid, nameController.text.trim(), emailController.text.trim());
+        await saveUserToDatabase(
+          user.uid,
+          nameController.text.trim(),
+          emailController.text.trim(),
+          phoneController.text.trim(),
+        );
 
         // E-posta doğrulama gönderme
         await user.sendEmailVerification();
@@ -183,6 +191,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your name';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Phone
+                  TextFormField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: 'PHONE',
+                      hintText: '+90 555 555 5555',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your phone number';
+                      }
+                      if (!RegExp(r'^\+?[0-9]{10,13}$').hasMatch(value)) {
+                        return 'Please enter a valid phone number';
                       }
                       return null;
                     },
