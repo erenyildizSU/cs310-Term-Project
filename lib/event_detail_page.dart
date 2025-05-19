@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
 import '../utils/app_paddings.dart';
-import '../models/event.dart';
-import '../providers/event_provider.dart';
+
+class Event {
+  final String name;
+  final String description;
+  final String posterUrl;
+  final DateTime date;
+  final String time;
+  final String venue;
+
+  Event({
+    required this.name,
+    required this.description,
+    required this.posterUrl,
+    required this.date,
+    required this.time,
+    required this.venue,
+  });
+}
 
 class EventDetailPage extends StatefulWidget {
   final Event event;
@@ -22,31 +34,15 @@ class _EventDetailPageState extends State<EventDetailPage> {
   bool isFavorite = false;
   bool isAttending = false;
 
-  @override
-  void initState() {
-    super.initState();
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    isFavorite = widget.event.favorites.contains(userId);
-    isAttending = widget.event.attendees.contains(userId);
-  }
-
-  void toggleFavorite() async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return;
-
-    await Provider.of<EventProvider>(context, listen: false)
-        .toggleFavorite(widget.event.id, userId);
-
+  void toggleFavorite() {
     setState(() => isFavorite = !isFavorite);
+
+    if (isFavorite) {
+      Navigator.pushNamed(context, '/favorites');
+    }
   }
 
-  void toggleAttend() async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return;
-
-    await Provider.of<EventProvider>(context, listen: false)
-        .toggleAttend(widget.event.id, userId);
-
+  void attendEvent() {
     setState(() => isAttending = !isAttending);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -64,14 +60,8 @@ class _EventDetailPageState extends State<EventDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Tarih biçimlendirme (eğer DateTime değilse, dönüşüm yapılmalı)
-    String formattedDate;
-    try {
-      final parsedDate = DateFormat("dd.MM.yyyy").parse(widget.event.date);
-      formattedDate = DateFormat("yyyy-MM-dd").format(parsedDate);
-    } catch (_) {
-      formattedDate = widget.event.date;
-    }
+    String formattedDate =
+        "${widget.event.date.year}-${widget.event.date.month.toString().padLeft(2, '0')}-${widget.event.date.day.toString().padLeft(2, '0')}";
 
     return Scaffold(
       appBar: AppBar(
@@ -83,12 +73,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            widget.event.posterUrl.isNotEmpty
-                ? Image.network(widget.event.posterUrl, fit: BoxFit.cover)
-                : const SizedBox(
-              height: 200,
-              child: Center(child: Icon(Icons.image_not_supported)),
-            ),
+            Image.asset(widget.event.posterUrl, fit: BoxFit.contain),
             Padding(
               padding: AppPaddings.all12,
               child: Row(
@@ -121,31 +106,9 @@ class _EventDetailPageState extends State<EventDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today),
-                      const SizedBox(width: 8),
-                      Text('Date: $formattedDate'),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.access_time),
-                      const SizedBox(width: 8),
-                      Text('Time: ${widget.event.time}'),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text('Venue: ${widget.event.venue}'),
-                      ),
-                    ],
-                  ),
+                  Row(children: [const Icon(Icons.calendar_today), const SizedBox(width: 8), Text('Date: $formattedDate')]),
+                  Row(children: [const Icon(Icons.access_time), const SizedBox(width: 8), Text('Time: ${widget.event.time}')]),
+                  Row(children: [const Icon(Icons.location_on), const SizedBox(width: 8), Text('Venue: ${widget.event.venue}')]),
                 ],
               ),
             ),
@@ -154,7 +117,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: toggleAttend,
+                  onPressed: attendEvent,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isAttending
                         ? AppColors.disabled

@@ -1,5 +1,4 @@
 class Club {
-  final String id;
   final String name;
   final String description;
   final String email;
@@ -7,7 +6,6 @@ class Club {
   final List<ClubEvent> events;
 
   Club({
-    required this.id,
     required this.name,
     required this.description,
     required this.email,
