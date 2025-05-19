@@ -185,7 +185,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     controller: nameController,
                     decoration: InputDecoration(
                       labelText: 'NAME',
-                      hintText: 'John Doe',
+                      hintText: 'example',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     validator: (value) {

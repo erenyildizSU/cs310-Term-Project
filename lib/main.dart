@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'providers/event_provider.dart';
+
 import 'login_screen.dart';
 import 'homepage.dart';
 import 'user_profile.dart';
@@ -12,11 +15,20 @@ import 'results_page.dart';
 import 'clubedit_page.dart';
 import 'event_detail_page.dart';
 import 'club/club_list_screen.dart';
+import 'models/event.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => EventProvider()..listenToEvents()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -33,7 +45,7 @@ class MyApp extends StatelessWidget {
       initialRoute: FirebaseAuth.instance.currentUser == null ? '/login' : '/',
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/': (context) => CampusVibeHomePage(),
+        '/': (context) => const CampusVibeHomePage(),
         '/userProfile': (context) => const UserProfileScreen(),
         '/comments': (context) => const CommentsScreen(),
         '/notifications': (context) => const NotificationsScreen(),

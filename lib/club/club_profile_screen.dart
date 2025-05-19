@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
 import '../utils/app_paddings.dart';
+import '../models/event.dart';
+import '../providers/event_provider.dart';
 import 'club.dart';
 
 class ClubProfileScreen extends StatelessWidget {
@@ -52,27 +55,53 @@ class ClubProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             const Text('Upcoming Events', style: AppTextStyles.sectionTitle),
-            ...club.events.map((event) => Card(
-              margin: const EdgeInsets.symmetric(vertical: 8.0),
-              child: ListTile(
-                leading: Image.asset(
-                  event.imagePath,
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
-                ),
-                title: Text(event.title),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(event.description),
-                    const SizedBox(height: 4),
-                    Text('Location: ${event.location}'),
-                    Text('Date: ${event.date}'),
-                  ],
-                ),
-              ),
-            )),
+            Consumer<EventProvider>(
+              builder: (context, eventProvider, _) {
+                final clubEvents = eventProvider.getEventsByCreator(club.id);
+
+                if (clubEvents.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.only(top: 8.0),
+                    child: Text("No events found for this club."),
+                  );
+                }
+
+                return Column(
+                  children: clubEvents.map((event) {
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: ListTile(
+                        leading: event.posterUrl.isNotEmpty
+                            ? Image.network(
+                          event.posterUrl,
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                        )
+                            : const Icon(Icons.image_not_supported),
+                        title: Text(event.name),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(event.description),
+                            const SizedBox(height: 4),
+                            Text('Location: ${event.venue}'),
+                            Text('Date: ${event.date}'),
+                          ],
+                        ),
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/eventDetails',
+                            arguments: event,
+                          );
+                        },
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
