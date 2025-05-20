@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
 
@@ -20,8 +21,50 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   @override
   void initState() {
     super.initState();
-    _fetchUsers();
-    _fetchClubs();
+    _checkAdminAccess(); // Yalnızca admin erişim kontrolü
+  }
+
+  Future<void> _checkAdminAccess() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+
+        if (userDoc.exists) {
+          final role = userDoc['role'];
+          if (role != 'admin') {
+            _showErrorDialogAndRedirect("Access Denied", "You do not have permission to access the Admin Panel.");
+          } else {
+            await _fetchUsers();
+            await _fetchClubs();
+          }
+        } else {
+          _showErrorDialogAndRedirect("Error", "User data not found.");
+        }
+      } catch (e) {
+        print("Error checking role: $e");
+        _showErrorDialogAndRedirect("Error", "Failed to verify user role.");
+      }
+    }
+  }
+
+  void _showErrorDialogAndRedirect(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _fetchUsers() async {
@@ -55,7 +98,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       final data = {'role': newRole};
       if (newRole == 'president' && clubName != null && clubId != null) {
         data['club_name'] = clubName;
-        data['club_id'] = clubId;  // ✅ Club ID de güncellendi
+        data['club_id'] = clubId;
       }
 
       await FirebaseFirestore.instance
@@ -129,16 +172,16 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                     onChanged: (newRole) async {
                       if (newRole != null) {
                         if (newRole == 'president') {
-                          final selectedClub = await showDialog<String>(
+                          final selectedClubIdResult = await showDialog<String>(
                             context: context,
                             builder: (BuildContext context) {
                               return AlertDialog(
                                 title: const Text('Select Club'),
                                 content: DropdownButton<String>(
-                                  value: selectedClubName,
+                                  value: selectedClubId,
                                   items: clubs.map((club) {
                                     return DropdownMenuItem<String>(
-                                      value: club['id'],  // Club ID seçilecek
+                                      value: club['id'],
                                       child: Text(club['name']),
                                     );
                                   }).toList(),
@@ -154,7 +197,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                               );
                             },
                           );
-                          if (selectedClub != null) {
+                          if (selectedClubIdResult != null) {
                             _updateUserRole(user['id'], newRole, selectedClubName, selectedClubId);
                           }
                         } else {

@@ -159,7 +159,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const SizedBox(height: 30),
 
-                  // Email
+
                   TextFormField(
                     controller: emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -179,7 +179,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Name
+
                   TextFormField(
                     controller: nameController,
                     decoration: InputDecoration(
@@ -196,7 +196,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Phone with country code
+
                   IntlPhoneField(
                     decoration: InputDecoration(
                       labelText: 'PHONE',
@@ -223,7 +223,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Password
+
                   TextFormField(
                     controller: passwordController,
                     obscureText: true,

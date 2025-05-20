@@ -17,7 +17,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   String email = "Loading...";
   String phone = "Loading...";
   String role = "Loading...";
-  String profileImageUrl = ""; // ✅ profil fotoğrafı için
+  String profileImageUrl = "";
   bool _isLoading = true;
 
   @override
@@ -26,7 +26,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     _fetchUserData();
   }
 
-  // Kullanıcı verilerini Firestore'dan alma
+
   Future<void> _fetchUserData() async {
     try {
       User? currentUser = FirebaseAuth.instance.currentUser;
@@ -142,7 +142,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Kullanıcı Bilgileri
+
             ListTile(
               leading: const Icon(Icons.email),
               title: Text(email),

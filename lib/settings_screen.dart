@@ -169,10 +169,10 @@ class SettingsScreen extends StatelessWidget {
           TextButton(
             onPressed: () async {
               try {
-                // Firestore’dan kullanıcıyı sil
+
                 await FirebaseFirestore.instance.collection('users').doc(user!.uid).delete();
 
-                // Firebase Authentication’dan sil
+
                 await user.delete();
 
                 Navigator.pop(context);

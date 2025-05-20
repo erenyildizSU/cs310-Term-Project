@@ -77,7 +77,7 @@ class _ClubEventPageState extends State<ClubEventPage> {
     }
   }
 
-  // 🆕 Etkinlik oluşturma veya güncelleme
+
   Future<void> _createOrUpdateEventData() async {
     try {
       final eventRef = FirebaseFirestore.instance
@@ -91,7 +91,7 @@ class _ClubEventPageState extends State<ClubEventPage> {
         'time': _timeController.text,
         'location': _locationController.text,
         'imageUrl': _imageUrlController.text,
-        'createdBy': clubId,  // 📌 Dinamik olarak kulüp ID'si
+        'createdBy': clubId,
         'createdAt': Timestamp.now(),
         'attendees': [],
         'favorites': [],
@@ -110,7 +110,7 @@ class _ClubEventPageState extends State<ClubEventPage> {
     }
   }
 
-  // ❌ Etkinlik silme fonksiyonu
+
   Future<void> _deleteEvent() async {
     try {
       await FirebaseFirestore.instance
@@ -129,7 +129,7 @@ class _ClubEventPageState extends State<ClubEventPage> {
     }
   }
 
-  // ⚠️ Hata gösterme fonksiyonu
+
   void _showErrorDialog(String title, String message) {
     showDialog(
       context: context,
@@ -146,16 +146,16 @@ class _ClubEventPageState extends State<ClubEventPage> {
     );
   }
 
-  // 💻 Arayüz bileşenleri
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           "Edit Event",
-          style: TextStyle(color: Colors.white),  // Beyaz renk
+          style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: const Color(0xFF1E3A8A),  // Lacivert arka plan rengi
+        backgroundColor: const Color(0xFF1E3A8A),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -202,7 +202,7 @@ class _ClubEventPageState extends State<ClubEventPage> {
     );
   }
 
-  // 📝 Metin alanı oluşturma fonksiyonu
+
   Widget _buildTextField(TextEditingController controller, String label, {int maxLines = 1}) {
     return TextField(
       controller: controller,

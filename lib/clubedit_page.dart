@@ -38,8 +38,8 @@ class _ClubEditPageState extends State<ClubEditPage> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Hata mesajı penceresini kapat
-              Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false); // Ana sayfaya dön
+              Navigator.pop(context);
+              Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
             },
             child: const Text('OK'),
           ),
