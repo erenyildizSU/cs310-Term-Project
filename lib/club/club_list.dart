@@ -2,6 +2,7 @@ import 'club.dart';
 
 final List<Club> clubs = [
   Club(
+    id: 'irK3ovkIK1HxVe0iXG9K',
     name: 'Economics and Management Club',
     description: 'Founded in 1999, EIK is a career-focused student club.',
     email: 'eik@sabanciuniv.edu',
@@ -25,6 +26,7 @@ final List<Club> clubs = [
     ],
   ),
   Club(
+    id: 'oUWMd2O831QN4yvxIBXo',
     name: 'MUZIKUS',
     description: 'Muzikus, founded in 1999 at Sabanci University, promotes campus music through diverse events and studio facilities.',
     email: 'muzikus@sabanciuniv.edu',
@@ -47,6 +49,7 @@ final List<Club> clubs = [
     ],
   ),
   Club(
+    id: 'RQ1UevOgawvc32o3jPCo',
     name: 'ARTELIER Fine Arts Club',
     description: 'All participants who want to spend time on art and pursue their dreams in life are invited to the club.',
     email: 'artelier@sabanciuniv.edu',
@@ -69,6 +72,7 @@ final List<Club> clubs = [
     ],
   ),
   Club(
+    id: 'x4fF1ocLT88KdC67ALbL',
     name: 'Tea Talks with CEOs Club',
     description: 'It is a club that has adopted the principle of bringing together the distinguished students of Sabancı University with leaders in their fields in the world and in Türkiye, and taking examples from their life stories and advice.',
     email: 'teatalks@sabanciuniv.edu',
@@ -91,6 +95,7 @@ final List<Club> clubs = [
     ],
   ),
   Club(
+    id: 'tCmSf3zgVr7glQQhHNEB',
     name: 'SUDANCE',
     description: "Representing the unity of those who are interested in dance, those who love dance, and those who perceive dance as a way of life, SuDance's dance courses and events held throughout the year attract great interest from our university's students and staff.",
     email: 'sudance@sabanciuniv.edu',
@@ -113,6 +118,7 @@ final List<Club> clubs = [
     ],
   ),
   Club(
+    id: 'vRkVYTttCvJx8AJl0Ku5',
     name: 'Sailing Club',
     description: "The club, which offers university students the opportunity to get acquainted with the sea and sailing, offers yacht training opportunities to its members, starting with 1* training and then with 2* and SUSAIL captains, respectively.",
     email: 'yelken@sabanciuniv.edu',

@@ -17,6 +17,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   String email = "Loading...";
   String phone = "Loading...";
   String role = "Loading...";
+  String profileImageUrl = ""; // ✅ profil fotoğrafı için
   bool _isLoading = true;
 
   @override
@@ -31,7 +32,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       User? currentUser = FirebaseAuth.instance.currentUser;
 
       if (currentUser != null) {
-        // Firestore'dan kullanıcı verilerini al
         DocumentSnapshot doc = await FirebaseFirestore.instance
             .collection('users')
             .doc(currentUser.uid)
@@ -43,6 +43,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             email = doc['email'] ?? 'No Email';
             phone = doc['phone'] ?? 'No Phone';
             role = doc['role'] ?? 'No Role';
+            profileImageUrl = doc['profileImageUrl'] ?? ''; // ✅ burası önemli
             _isLoading = false;
           });
         } else {
@@ -51,6 +52,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             email = 'N/A';
             phone = 'N/A';
             role = 'N/A';
+            profileImageUrl = '';
             _isLoading = false;
           });
         }
@@ -62,6 +64,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         email = 'Error';
         phone = 'Error';
         role = 'Error';
+        profileImageUrl = '';
         _isLoading = false;
       });
     }
@@ -98,6 +101,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               onTap: () => Navigator.pushReplacementNamed(context, '/clubEdit'),
             ),
             ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
+              onTap: () => Navigator.pushNamed(context, '/settings'),
+            ),
+            ListTile(
               leading: const Icon(Icons.exit_to_app_outlined),
               title: const Text('Log Out'),
               onTap: () => Navigator.pushReplacementNamed(context, '/login'),
@@ -109,7 +117,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         padding: AppPaddings.all16,
         child: Column(
           children: [
-            const CircleAvatar(
+            _isLoading
+                ? const CircularProgressIndicator()
+                : profileImageUrl.isNotEmpty
+                ? CircleAvatar(
+              radius: 75,
+              backgroundImage: NetworkImage(profileImageUrl),
+            )
+                : const CircleAvatar(
               radius: 75,
               backgroundColor: AppColors.primary,
               child: Icon(

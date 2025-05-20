@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:intl_phone_field/phone_number.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_paddings.dart';
 import 'login_screen.dart';
@@ -17,7 +19,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-  final phoneController = TextEditingController();
+  String phoneNumberWithCountryCode = '';
   bool _isLoading = false;
 
   @override
@@ -25,15 +27,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
     nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
-    phoneController.dispose();
     super.dispose();
   }
 
-  // Kullanıcı verilerini Firestore'a kaydetme
   Future<void> saveUserToDatabase(String uid, String name, String email, String phone) async {
     try {
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
-        'role': "",
+        'profileImageUrl': "",
+        'club_id': "",
+        'club_name': "",
+        'role': "admin",
         'name': name,
         'email': email,
         'phone': phone,
@@ -45,39 +48,36 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
-  // Firebase ile kullanıcı kaydı işlemi
   Future<void> _registerUser() async {
+    if (!_formKey.currentState!.validate()) return;
+    _formKey.currentState!.save();
+
     setState(() {
       _isLoading = true;
     });
 
     try {
-      UserCredential userCredential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
 
       User? user = userCredential.user;
       if (user != null) {
-        // Kullanıcı bilgilerini Firestore'a kaydetme
         await saveUserToDatabase(
           user.uid,
           nameController.text.trim(),
           emailController.text.trim(),
-          phoneController.text.trim(),
+          phoneNumberWithCountryCode,
         );
 
-        // E-posta doğrulama gönderme
         await user.sendEmailVerification();
 
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Registration Successful'),
-            content: const Text(
-              'Please verify your email. A verification link has been sent.',
-            ),
+            content: const Text('Please verify your email. A verification link has been sent.'),
             actions: [
               TextButton(
                 onPressed: () {
@@ -95,7 +95,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
     } on FirebaseAuthException catch (e) {
       String errorMessage;
-
       switch (e.code) {
         case 'email-already-in-use':
           errorMessage = 'This email is already registered.';
@@ -185,7 +184,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     controller: nameController,
                     decoration: InputDecoration(
                       labelText: 'NAME',
-                      hintText: 'John Doe',
+                      hintText: 'example',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     validator: (value) {
@@ -197,25 +196,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Phone
-                  TextFormField(
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
+                  // Phone with country code
+                  IntlPhoneField(
                     decoration: InputDecoration(
                       labelText: 'PHONE',
-                      hintText: '+90 555 555 5555',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your phone number';
+                    initialCountryCode: 'TR',
+                    keyboardType: TextInputType.number,
+                    disableLengthCheck: false,
+                    onChanged: (PhoneNumber phone) {
+                      final digitsOnly = phone.number.replaceAll(RegExp(r'[^0-9]'), '');
+                      if (RegExp(r'^[0-9]{10}\$').hasMatch(digitsOnly)) {
+                        phoneNumberWithCountryCode = phone.countryCode + digitsOnly;
                       }
-                      if (!RegExp(r'^\+?[0-9]{10,13}$').hasMatch(value)) {
-                        return 'Please enter a valid phone number';
+                    },
+                    validator: (value) {
+                      if (value == null || value.number.isEmpty) {
+                        return 'Please enter your phone number';
+                      } else if (!RegExp(r'^[0-9]{10}\$').hasMatch(value.number)) {
+                        return 'Phone number must be 10 digits';
                       }
                       return null;
                     },
                   ),
+
                   const SizedBox(height: 16),
 
                   // Password
@@ -235,7 +240,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const SizedBox(height: 30),
 
-                  // Sign Up Button
                   SizedBox(
                     width: double.infinity,
                     height: 50,

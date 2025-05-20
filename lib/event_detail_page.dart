@@ -1,25 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
 import '../utils/app_paddings.dart';
-
-class Event {
-  final String name;
-  final String description;
-  final String posterUrl;
-  final DateTime date;
-  final String time;
-  final String venue;
-
-  Event({
-    required this.name,
-    required this.description,
-    required this.posterUrl,
-    required this.date,
-    required this.time,
-    required this.venue,
-  });
-}
+import '../models/event.dart';
+import '../providers/event_provider.dart';
 
 class EventDetailPage extends StatefulWidget {
   final Event event;
@@ -33,24 +22,52 @@ class EventDetailPage extends StatefulWidget {
 class _EventDetailPageState extends State<EventDetailPage> {
   bool isFavorite = false;
   bool isAttending = false;
+  int favoriteCount = 0;
+  final TextEditingController _commentController = TextEditingController();
 
-  void toggleFavorite() {
-    setState(() => isFavorite = !isFavorite);
-
-    if (isFavorite) {
-      Navigator.pushNamed(context, '/favorites');
-    }
+  @override
+  void initState() {
+    super.initState();
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    isFavorite = widget.event.favorites.contains(userId);
+    isAttending = widget.event.attendees.contains(userId);
+    favoriteCount = widget.event.favorites.length;
   }
 
-  void attendEvent() {
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  void toggleFavorite() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    await Provider.of<EventProvider>(context, listen: false)
+        .toggleFavorite(widget.event.id, userId);
+
+    setState(() {
+      isFavorite = !isFavorite;
+      favoriteCount += isFavorite ? 1 : -1;
+    });
+  }
+
+  void toggleAttend() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    await Provider.of<EventProvider>(context, listen: false)
+        .toggleAttend(widget.event.id, userId);
+
     setState(() => isAttending = !isAttending);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           isAttending
-              ? '✔ You are now attending this event!'
-              : '✖ You are no longer attending this event.',
+              ? 'You are now attending this event!'
+              : 'You are no longer attending this event.',
         ),
         backgroundColor: isAttending ? Colors.green : Colors.red,
         duration: const Duration(seconds: 2),
@@ -58,10 +75,43 @@ class _EventDetailPageState extends State<EventDetailPage> {
     );
   }
 
+  void _submitComment() async {
+    final commentText = _commentController.text.trim();
+    final user = FirebaseAuth.instance.currentUser;
+    final userId = user?.uid;
+
+    if (commentText.isEmpty || userId == null) return;
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+
+    final userName = userDoc.data()?['name'] ?? 'Anonymous';
+
+    await FirebaseFirestore.instance
+        .collection('events_detail')
+        .doc(widget.event.id)
+        .collection('comments')
+        .add({
+      'commentText': commentText,
+      'userId': userId,
+      'name': userName,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    _commentController.clear();
+  }
+
   @override
   Widget build(BuildContext context) {
-    String formattedDate =
-        "${widget.event.date.year}-${widget.event.date.month.toString().padLeft(2, '0')}-${widget.event.date.day.toString().padLeft(2, '0')}";
+    String formattedDate;
+    try {
+      final parsedDate = DateFormat("dd.MM.yyyy").parse(widget.event.date);
+      formattedDate = DateFormat("yyyy-MM-dd").format(parsedDate);
+    } catch (_) {
+      formattedDate = widget.event.date;
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -73,7 +123,12 @@ class _EventDetailPageState extends State<EventDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.asset(widget.event.posterUrl, fit: BoxFit.contain),
+            widget.event.posterUrl.isNotEmpty
+                ? Image.network(widget.event.posterUrl, fit: BoxFit.cover)
+                : const SizedBox(
+              height: 200,
+              child: Center(child: Icon(Icons.image_not_supported)),
+            ),
             Padding(
               padding: AppPaddings.all12,
               child: Row(
@@ -84,22 +139,27 @@ class _EventDetailPageState extends State<EventDetailPage> {
                       style: AppTextStyles.eventName,
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(
-                      isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: isFavorite ? Colors.red : Colors.grey,
-                    ),
-                    onPressed: toggleFavorite,
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: isFavorite ? Colors.red : Colors.grey,
+                        ),
+                        onPressed: toggleFavorite,
+                      ),
+                      Text(
+                        '$favoriteCount',
+                        style: const TextStyle(fontSize: 16, color: Colors.black54),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
             Padding(
               padding: AppPaddings.horizontal12,
-              child: Text(
-                widget.event.description,
-                style: AppTextStyles.eventDescription,
-              ),
+              child: Text(widget.event.description, style: AppTextStyles.eventDescription),
             ),
             Padding(
               padding: AppPaddings.all12,
@@ -107,8 +167,14 @@ class _EventDetailPageState extends State<EventDetailPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(children: [const Icon(Icons.calendar_today), const SizedBox(width: 8), Text('Date: $formattedDate')]),
+                  const SizedBox(height: 4),
                   Row(children: [const Icon(Icons.access_time), const SizedBox(width: 8), Text('Time: ${widget.event.time}')]),
-                  Row(children: [const Icon(Icons.location_on), const SizedBox(width: 8), Text('Venue: ${widget.event.venue}')]),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    const Icon(Icons.location_on),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text('Venue: ${widget.event.venue}')),
+                  ]),
                 ],
               ),
             ),
@@ -117,11 +183,9 @@ class _EventDetailPageState extends State<EventDetailPage> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: attendEvent,
+                  onPressed: toggleAttend,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isAttending
-                        ? AppColors.disabled
-                        : AppColors.primary,
+                    backgroundColor: isAttending ? AppColors.disabled : AppColors.primary,
                     padding: AppPaddings.vertical14,
                   ),
                   child: Text(
@@ -129,6 +193,85 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     style: const TextStyle(fontSize: 18, color: AppColors.textWhite),
                   ),
                 ),
+              ),
+            ),
+            const Divider(thickness: 1),
+            Padding(
+              padding: AppPaddings.all12,
+              child: Text('Comments', style: AppTextStyles.eventName),
+            ),
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('events_detail')
+                  .doc(widget.event.id)
+                  .collection('comments')
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final comments = snapshot.data?.docs ?? [];
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: comments.length,
+                  itemBuilder: (context, index) {
+                    final data = comments[index].data() as Map<String, dynamic>;
+                    final text = data['commentText'] ?? '';
+                    final userId = data['userId'] ?? '';
+                    final name = data['name'] ?? 'Anonymous';
+                    final timestamp = data['createdAt'] as Timestamp?;
+                    final time = timestamp != null
+                        ? DateFormat('yyyy-MM-dd HH:mm').format(timestamp.toDate())
+                        : '';
+                    final currentUser = FirebaseAuth.instance.currentUser;
+
+                    return ListTile(
+                      leading: const Icon(Icons.comment),
+                      title: Text(text),
+                      subtitle: Text('$name • $time'),
+                      trailing: userId == currentUser?.uid
+                          ? IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () async {
+                          final commentId = comments[index].id;
+                          await FirebaseFirestore.instance
+                              .collection('events_detail')
+                              .doc(widget.event.id)
+                              .collection('comments')
+                              .doc(commentId)
+                              .delete();
+                        },
+                      )
+                          : null,
+                    );
+                  },
+                );
+              },
+            ),
+            Padding(
+              padding: AppPaddings.all12,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _commentController,
+                      decoration: const InputDecoration(
+                        hintText: 'Write a comment...',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _submitComment,
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                    child: const Icon(Icons.send, color: Colors.white),
+                  ),
+                ],
               ),
             ),
           ],

@@ -37,7 +37,6 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text.trim(),
       );
 
-      // Kullanıcının e-posta doğrulaması yapılmış mı kontrol et
       if (!userCredential.user!.emailVerified) {
         await userCredential.user!.sendEmailVerification();
         showDialog(
@@ -58,7 +57,6 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // Giriş başarılı olduğunda anasayfaya yönlendirme
       Navigator.pushReplacementNamed(context, '/');
     } on FirebaseAuthException catch (e) {
       String errorMessage;
@@ -121,6 +119,54 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  void _showForgotPasswordDialog() {
+    final TextEditingController _resetEmailController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Password'),
+        content: TextField(
+          controller: _resetEmailController,
+          keyboardType: TextInputType.emailAddress,
+          decoration: const InputDecoration(
+            labelText: 'Enter your email',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final email = _resetEmailController.text.trim();
+              if (email.isEmpty || !email.endsWith('@sabanciuniv.edu')) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter a valid Sabancı email')),
+                );
+                return;
+              }
+              try {
+                await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Password reset email sent')),
+                );
+              } catch (e) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: ${e.toString()}')),
+                );
+              }
+            },
+            child: const Text('Send'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -225,7 +271,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: AppTextStyles.loginButtonText,
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 4),
+                            TextButton(
+                              onPressed: _showForgotPasswordDialog,
+                              child: const Text(
+                                "Forgot Password?",
+                                style: TextStyle(color: Colors.redAccent),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
                             TextButton(
                               onPressed: () {
                                 Navigator.push(

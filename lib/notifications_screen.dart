@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
 
@@ -26,16 +27,63 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  final List<NotificationItem> _notifications = [
-    NotificationItem(id: '1', type: 'Announcement', message: 'App update available', timestamp: DateTime.now().subtract(const Duration(hours: 1))),
-    NotificationItem(id: '2', type: 'Alert', message: 'New comment on your post', timestamp: DateTime.now().subtract(const Duration(hours: 2))),
-  ];
+  List<NotificationItem> _notifications = [];
 
-  void _deleteAll() => setState(() => _notifications.clear());
+  @override
+  void initState() {
+    super.initState();
+    _fetchNotifications();
+  }
 
-  void _markAllAsRead() => setState(() => _notifications.forEach((n) => n.isRead = true));
+  Future<void> _fetchNotifications() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('notifications')
+          .orderBy('timestamp', descending: true)
+          .get();
 
-  void _markAsRead(String id) {
+      setState(() {
+        _notifications = snapshot.docs.map((doc) {
+          final data = doc.data();
+          return NotificationItem(
+            id: doc.id,
+            type: data['type'] ?? 'Unknown',
+            message: data['message'] ?? 'No message',
+            timestamp: (data['timestamp'] as Timestamp).toDate(),
+            isRead: data['isRead'] ?? false,
+          );
+        }).toList();
+      });
+    } catch (e) {
+      print("Error fetching notifications: $e");
+    }
+  }
+
+  void _deleteAll() async {
+    await FirebaseFirestore.instance.collection('notifications').get().then((snapshot) {
+      for (DocumentSnapshot doc in snapshot.docs) {
+        doc.reference.delete();
+      }
+    });
+    setState(() => _notifications.clear());
+  }
+
+  void _markAllAsRead() async {
+    for (var notification in _notifications) {
+      await FirebaseFirestore.instance
+          .collection('notifications')
+          .doc(notification.id)
+          .update({'isRead': true});
+    }
+    setState(() => _notifications.forEach((n) => n.isRead = true));
+  }
+
+  void _markAsRead(String id) async {
+    await FirebaseFirestore.instance
+        .collection('notifications')
+        .doc(id)
+        .update({'isRead': true});
+
     final index = _notifications.indexWhere((n) => n.id == id);
     if (index != -1) {
       setState(() => _notifications[index].isRead = true);
@@ -56,7 +104,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: Column(
         children: [
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: const BoxDecoration(
               border: Border(bottom: BorderSide(color: Colors.black12)),
             ),
@@ -103,5 +151,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ],
       ),
     );
+  }
+}
+
+Future<void> createNewEventNotification(String eventName) async {
+  try {
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'type': 'Event',
+      'message': 'New event created: $eventName',
+      'timestamp': Timestamp.now(),
+      'isRead': false,
+    });
+  } catch (e) {
+    print("Error creating notification: $e");
   }
 }

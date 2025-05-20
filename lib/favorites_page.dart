@@ -1,31 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../utils/app_colors.dart';
 import '../utils/app_paddings.dart';
 import '../utils/app_text_styles.dart';
+import '../models/event.dart';
+import '../providers/event_provider.dart';
 
-class FavoritesPage extends StatefulWidget {
+class FavoritesPage extends StatelessWidget {
   const FavoritesPage({super.key});
 
   @override
-  State<FavoritesPage> createState() => _FavoritesPageState();
-}
-
-class _FavoritesPageState extends State<FavoritesPage> {
-  List<Map<String, String>> favorites = [
-
-    {'title': 'Networking Fair', 'date': '5 March Tuesday', 'image': 'assets/networking_fair.jpg'},
-    {'title': 'Karaoke Night', 'date': '10 March Sunday', 'image': 'assets/karaoke_night.png'},
-    {'title': 'Case-Study', 'date': '11 March Monday', 'image': 'assets/case_study.avif'},
-    {'title': 'Tech Summit', 'date': '12 March Wednesday', 'image': 'assets/tech_summit.png'},
-    {'title': 'The Titanic (Movie Night)', 'date': '14 March Friday', 'image': 'assets/titanic.jpg'},
-    {'title': 'Painting Workshop', 'date': '17 March Monday', 'image': 'assets/painting_workshop.png'},
-    {'title': 'Fashion Talks', 'date': '18 March Tuesday', 'image': 'assets/fashion_talks.png'},
-    {'title': 'Everest Hiking', 'date': '7 April Monday', 'image': 'assets/everest_hiking.jpg'},
-
-  ];
-
-  @override
   Widget build(BuildContext context) {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final allEvents = Provider.of<EventProvider>(context).events;
+    final favoriteEvents = allEvents.where((event) => event.favorites.contains(userId)).toList();
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.favoriteGradient),
@@ -38,13 +29,16 @@ class _FavoritesPageState extends State<FavoritesPage> {
                 child: Text('FAVORITES', style: AppTextStyles.sectionTitleBigWhite),
               ),
               Expanded(
-                child: favorites.isEmpty
-                    ? const Center(child: Text('No favorite events yet', style: TextStyle(color: Colors.white70)))
+                child: favoriteEvents.isEmpty
+                    ? const Center(
+                  child: Text('No favorite events yet',
+                      style: TextStyle(color: Colors.white70)),
+                )
                     : ListView.builder(
                   padding: AppPaddings.horizontal16,
-                  itemCount: favorites.length,
+                  itemCount: favoriteEvents.length,
                   itemBuilder: (context, index) {
-                    final item = favorites[index];
+                    final event = favoriteEvents[index];
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(10),
@@ -64,19 +58,18 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: Image.asset(
-                              item['image']!,
+                            child: event.posterUrl.isNotEmpty
+                                ? Image.network(
+                              event.posterUrl,
                               width: 50,
                               height: 50,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  width: 50,
-                                  height: 50,
-                                  color: Colors.grey.shade300,
-                                  child: const Icon(Icons.image_not_supported, color: Colors.grey),
-                                );
-                              },
+                            )
+                                : Container(
+                              width: 50,
+                              height: 50,
+                              color: Colors.grey.shade300,
+                              child: const Icon(Icons.image_not_supported, color: Colors.grey),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -84,17 +77,16 @@ class _FavoritesPageState extends State<FavoritesPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(item['title']!, style: AppTextStyles.eventListTitle),
-                                Text(item['date']!, style: AppTextStyles.eventListSubtitle),
+                                Text(event.name, style: AppTextStyles.eventListTitle),
+                                Text(event.date, style: AppTextStyles.eventListSubtitle),
                               ],
                             ),
                           ),
                           IconButton(
                             icon: const Icon(Icons.favorite, color: Colors.red),
-                            onPressed: () {
-                              setState(() {
-                                favorites.removeAt(index);
-                              });
+                            onPressed: () async {
+                              await Provider.of<EventProvider>(context, listen: false)
+                                  .toggleFavorite(event.id, userId);
                             },
                           ),
                         ],
