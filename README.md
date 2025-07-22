@@ -36,4 +36,4 @@ In Phase 3, the **CampusVibe** app was significantly enhanced with backend integ
 
 ---
 
-🚀 This phase transforms CampusVibe from a static front-end into a fully functional, cloud-backed application, setting the foundation for a production-ready mobile app experience.
+This phase transforms CampusVibe from a static front-end into a fully functional, cloud-backed application, setting the foundation for a production-ready mobile app experience.
