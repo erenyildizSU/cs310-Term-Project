@@ -1,6 +1,6 @@
 # CampusVibe - University Event Management App
 
-## Project Phase 0
+## Project Phase 0  (Use the ‘Switch branches’ button to view other phases.)
 
 ### Application Name: CampusVibe
 
